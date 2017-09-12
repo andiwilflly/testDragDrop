@@ -42,6 +42,8 @@ class TimeFrame extends React.Component {
 			isActive: false
 		});
 
+
+		// TODO: Diable on animation run (in model)
 		this.panResponder = PanResponder.create({
 			onStartShouldSetPanResponder: ()=> true,
 			onMoveShouldSetPanResponderCapture: ()=> true,
@@ -72,10 +74,12 @@ class TimeFrame extends React.Component {
 						}
 					).start(()=> this.state.pan.flattenOffset());
 				} else {
+					const bottomY = (this.tabFrame.index+1) * this.frameHeaderHeight - this.frameHeaderHeight;
+					tabFramesModel.setTabFrame(this.props.title, { isActive: gesture.dy < bottomY });
 					Animated.timing(
 						this.state.pan.y,
 						{
-							toValue: (this.tabFrame.index+1) * this.frameHeaderHeight - this.frameHeaderHeight,
+							toValue: gesture.dy < bottomY ? 0 : bottomY,
 							duration: 700,
 						}
 					).start(()=> this.state.pan.flattenOffset());
