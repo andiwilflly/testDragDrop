@@ -35,56 +35,20 @@ class TimeFrame extends React.Component {
 			pan: new Animated.ValueXY()
 		};
 
+
 		tabFramesModel.createTabFrame({
 			index: props.index,
 			title: props.title,
-			isActive: false
-		});
-	}
-
-
-	componentWillMount() {
-		this.createResponder();
-
-		this['@reaction tabsFrame.change'] = reaction(
-			()=> this.tabFrame.isActive,
-			()=> {
-				//console.log('changes...', this.tabFrame.isActive);
-			},
-			{ name: '@reaction tabsFrame.change' }
-		);
-
-		Animated.spring(this.state.pan, {
-			toValue: (this.tabFrame.index+1) * this.frameHeaderHeight
-		}).start();
-	}
-
-
-	componentWillUnmount() {
-		this.state.pan.y.removeAllListeners();
-		this['@reaction tabsFrame.change']();
-	}
-
-	
-	@computed get tabFrame() { return tabFramesModel.tabFrames.get(this.props.title); };
-
-
-	createResponder() {
-		this._animatedValueY = 0;
-		this.state.pan.y.addListener((value)=> {
-			this._animatedValueY = value.value
+			isActive: props.index === 0
 		});
 
 		this.panResponder = PanResponder.create({
-			onMoveShouldSetResponderCapture: () => true,
+			onStartShouldSetPanResponder: ()=> true,
 			onMoveShouldSetPanResponderCapture: () => true,
 			onPanResponderGrant: (evt, gestureState)=> {
-				console.log('STAERT');
-
-				this.state.pan.setOffset({ x: 0, y: this._animatedValueY });
+				this.state.pan.setOffset({ x: 0, y: this.state.pan.y._value });
 				this.state.pan.setValue({ x: 0, y: 0 });
 
-				//tabFramesModel.setTabFrame(this.tabFrame.title, { isActive: true });
 				// if(!this.tabFrame.isActive)
 				// 	Animated.spring(
 				// 		this.state.pan,
@@ -95,27 +59,37 @@ class TimeFrame extends React.Component {
 				// 	});
 			},
 			onPanResponderMove: (evt, gestureState)=> {
-				//if(this.tabFrame.isActive)
-				Animated.event([ null, {
-					dx: this.state.pan.x,
-					dy: this.state.pan.y
-				}])(evt, gestureState);
+					Animated.event([ null, {
+						dx: this.state.pan.x,
+						dy: this.state.pan.y
+					}])(evt, gestureState);
 			},
 			onPanResponderRelease: (e, gesture)=> {
-				console.log('END');
-				Animated.spring(this.state.pan, {
-					toValue: 0
-				}).start();
+				this.state.pan.flattenOffset();
 			}
 		});
 	}
 
 
-	getStyle() {
-		return [
-			{ transform: [ { translateY: this.state.pan.y} ] }
-		];
+	componentDidMount() {
+		this['@reaction tabsFrame.change'] = reaction(
+			()=> this.tabFrame.isActive,
+			()=> {
+				//console.log('changes...', this.tabFrame.isActive);
+			},
+			{ name: '@reaction tabsFrame.change' }
+		);
 	}
+
+
+	componentWillUnmount() {
+		this['@reaction tabsFrame.change']();
+	}
+
+	
+	@computed get tabFrame() { return tabFramesModel.tabFrames.get(this.props.title); };
+
+	get transform() { return { transform: [{ translateY: this.state.pan.y }] }  };
 
 
 	render() {
@@ -126,8 +100,9 @@ class TimeFrame extends React.Component {
 						{ ...this.panResponder.panHandlers }
 						style={[{
 							width: Window.width,
-							height: Window.height
-						}, styles[this.props.title].content, this.getStyle() ]}>
+							height: Window.height,
+							left: 0,
+						}, styles[this.props.title].content, this.transform ]}>
 						<Text style={ styles.text }>{ this.props.title } { +this.tabFrame.isActive }</Text>
 					</Animated.View>
 				</View>
@@ -156,23 +131,23 @@ let styles = {
 		left        : 0,
 	},
 	'Life': {
-		tab: { zIndex: 1, top: 0 },
+		tab: { zIndex: 1, top: 100 },
 		content: { backgroundColor: 'orange' }
 	},
 	'Year': {
-		tab: { zIndex: 2, top: 0 },
+		tab: { zIndex: 2, top: 150 },
 		content: { backgroundColor: 'blue' }
 	},
 	'Month': {
-		tab: {zIndex: 3, top: 0 },
+		tab: {zIndex: 3, top: 200 },
 		content: { backgroundColor: 'green' }
 	},
 	'Week': {
-		tab: { zIndex: 4, top: 0 },
+		tab: {zIndex: 4, top: 250 },
 		content: { backgroundColor: 'darkred' }
 	},
 	'Day': {
-		tab: {zIndex: 5, top: 0 },
+		tab: {zIndex: 5, top: 300 },
 		content: { backgroundColor: 'gray' }
 	},
 };
