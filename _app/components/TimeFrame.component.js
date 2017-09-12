@@ -39,33 +39,47 @@ class TimeFrame extends React.Component {
 		tabFramesModel.createTabFrame({
 			index: props.index,
 			title: props.title,
-			isActive: props.index === 0
+			isActive: false
 		});
 
 		this.panResponder = PanResponder.create({
 			onStartShouldSetPanResponder: ()=> true,
-			onMoveShouldSetPanResponderCapture: () => true,
+			onMoveShouldSetPanResponderCapture: ()=> true,
 			onPanResponderGrant: (evt, gestureState)=> {
 				this.state.pan.setOffset({ x: 0, y: this.state.pan.y._value });
 				this.state.pan.setValue({ x: 0, y: 0 });
-
-				// if(!this.tabFrame.isActive)
-				// 	Animated.spring(
-				// 		this.state.pan,
-				// 		{ toValue: { x: 0, y: -(this.tabFrame.index+1) * 50 }}
-				// 	).start(()=> {
-				// 		tabFramesModel.setTabFrame(this.tabFrame.title, { isActive: true });
-				// 		console.log(this.state.pan.y);
-				// 	});
+				if(this.tabFrame.isActive) {
+					tabFramesModel.setTabFrame(this.props.title, { isActive: false });
+				} else {
+					tabFramesModel.setTabFrame(this.props.title, { isActive: true });
+				}
 			},
 			onPanResponderMove: (evt, gestureState)=> {
+				if(!this.tabFrame.isActive)
 					Animated.event([ null, {
 						dx: this.state.pan.x,
 						dy: this.state.pan.y
 					}])(evt, gestureState);
 			},
 			onPanResponderRelease: (e, gesture)=> {
-				this.state.pan.flattenOffset();
+				if(this.tabFrame.isActive) {
+					this.state.pan.flattenOffset();
+					Animated.timing(
+						this.state.pan.y,
+						{
+							toValue: -(this.tabFrame.index+1) * this.frameHeaderHeight + this.frameHeaderHeight,
+							duration: 700,
+						}
+					).start(()=> this.state.pan.flattenOffset());
+				} else {
+					Animated.timing(
+						this.state.pan.y,
+						{
+							toValue: (this.tabFrame.index+1) * this.frameHeaderHeight - this.frameHeaderHeight,
+							duration: 700,
+						}
+					).start(()=> this.state.pan.flattenOffset());
+				}
 			}
 		});
 	}
@@ -131,23 +145,23 @@ let styles = {
 		left        : 0,
 	},
 	'Life': {
-		tab: { zIndex: 1, top: 100 },
+		tab: { transform: [{ translateY: 0 }] },
 		content: { backgroundColor: 'orange' }
 	},
 	'Year': {
-		tab: { zIndex: 2, top: 150 },
+		tab: { transform: [{ translateY: 50 }] },
 		content: { backgroundColor: 'blue' }
 	},
 	'Month': {
-		tab: {zIndex: 3, top: 200 },
+		tab: { transform: [{ translateY: 100 }] },
 		content: { backgroundColor: 'green' }
 	},
 	'Week': {
-		tab: {zIndex: 4, top: 250 },
+		tab: { transform: [{ translateY: 150 }] },
 		content: { backgroundColor: 'darkred' }
 	},
 	'Day': {
-		tab: {zIndex: 5, top: 300 },
+		tab: { transform: [{ translateY: 200 }] },
 		content: { backgroundColor: 'gray' }
 	},
 };

@@ -30,7 +30,7 @@ class TabFrames {
 
 		runInAction(`TAB-FRAMES-SET-SUCCESS ${title}`, ()=> {
 			_.forEach(this.tabFrames.values(), (_tabFrame)=> {
-				this.tabFrames.set(_tabFrame.title, { ..._tabFrame, ...props, isActive: _tabFrame.index === tabFrame.index });
+				this.tabFrames.set(_tabFrame.title, { ..._tabFrame, ...props, isActive: (title === _tabFrame.title ? props.isActive : false) });
 			});
 		});
 	};
