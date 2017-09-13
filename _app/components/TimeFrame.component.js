@@ -2,6 +2,7 @@
  * @providesModule TimeFrame.component
  */
 import React from 'react';
+import _ from "lodash";
 // Native Components
 import {  Component,
 	StyleSheet,
@@ -14,7 +15,7 @@ import {  Component,
 // MobX
 import {action, reaction, observable, observe, computed, autorun, asStructure,runInAction} from 'mobx';
 import { observer } from 'mobx-react/native';
-//Models
+// Models
 import tabFramesModel from 'tabFrames.model';
 
 
@@ -31,58 +32,54 @@ class TimeFrame extends React.Component {
 	constructor(props) {
 		super(props);
 
-		this.state = {
-			pan: new Animated.ValueXY()
-		};
-
-
-		tabFramesModel.createTabFrame({
-			index: props.index,
-			title: props.title,
-			isActive: false
-		});
-
-
-		// TODO: Diable on animation run (in model)
 		this.panResponder = PanResponder.create({
 			onStartShouldSetPanResponder: ()=> true,
 			onMoveShouldSetPanResponderCapture: ()=> true,
 			onPanResponderGrant: (evt, gestureState)=> {
-				this.state.pan.setOffset({ x: 0, y: this.state.pan.y._value });
-				this.state.pan.setValue({ x: 0, y: 0 });
+				if(this.animationInProgress) return;
+
+				this.tabFrame.pan.setOffset({ x: 0, y: this.tabFrame.pan.y._value });
+				this.tabFrame.pan.setValue({ x: 0, y: 0 });
 				if(this.tabFrame.isActive) {
 					tabFramesModel.setTabFrame(this.props.title, { isActive: false });
 				} else {
 					tabFramesModel.setTabFrame(this.props.title, { isActive: true });
 				}
+
+				tabFramesModel.setAnimationInProgress(true);
 			},
 			onPanResponderMove: (evt, gestureState)=> {
 				if(!this.tabFrame.isActive)
 					Animated.event([ null, {
-						dx: this.state.pan.x,
-						dy: this.state.pan.y
+						dy: this.tabFrame.pan.y
 					}])(evt, gestureState);
 			},
 			onPanResponderRelease: (e, gesture)=> {
 				if(this.tabFrame.isActive) {
-					this.state.pan.flattenOffset();
+					this.tabFrame.pan.flattenOffset();
 					Animated.timing(
-						this.state.pan.y,
+						this.tabFrame.pan.y,
 						{
 							toValue: -(this.tabFrame.index+1) * this.frameHeaderHeight + this.frameHeaderHeight,
 							duration: 700,
 						}
-					).start(()=> this.state.pan.flattenOffset());
+					).start(()=> {
+						tabFramesModel.setAnimationInProgress(false);
+						this.tabFrame.pan.flattenOffset();
+					});
 				} else {
 					const bottomY = (this.tabFrame.index+1) * this.frameHeaderHeight - this.frameHeaderHeight;
 					tabFramesModel.setTabFrame(this.props.title, { isActive: gesture.dy < bottomY });
 					Animated.timing(
-						this.state.pan.y,
+						this.tabFrame.pan.y,
 						{
 							toValue: gesture.dy < bottomY ? 0 : bottomY,
 							duration: 700,
 						}
-					).start(()=> this.state.pan.flattenOffset());
+					).start(()=> {
+						tabFramesModel.setAnimationInProgress(false);
+						this.tabFrame.pan.flattenOffset();
+					});
 				}
 			}
 		});
@@ -90,24 +87,40 @@ class TimeFrame extends React.Component {
 
 
 	componentDidMount() {
-		this['@reaction tabsFrame.change'] = reaction(
-			()=> this.tabFrame.isActive,
+		this['@reaction tabFramesModel.animationInProgress'] = reaction(
+			()=> tabFramesModel.animationInProgress,
 			()=> {
-				//console.log('changes...', this.tabFrame.isActive);
+				if(!this.activeTabFrame && !tabFramesModel.animationInProgress) {
+					this.tabFrame.pan.flattenOffset();
+					Animated.timing(
+						this.tabFrame.pan.y,
+						{ toValue: 0, duration: 700 }
+					).start();
+				}
+				if(this.activeTabFrame && this.activeTabFrame.index < this.tabFrame.index) {
+					Animated.timing(
+						this.tabFrame.pan.y,
+						{ toValue: Window.height, duration: 700 }
+					).start();
+				}
 			},
-			{ name: '@reaction tabsFrame.change' }
+			{ name: '@reaction tabsFrames.animationInProgress' }
 		);
 	}
 
 
 	componentWillUnmount() {
-		this['@reaction tabsFrame.change']();
+		this['@reaction tabsFrames.animationInProgress']();
 	}
 
 	
+	@computed get activeTabFrame() { return _.find(tabFramesModel.tabFrames.values(), (tabFrame)=> tabFrame.isActive); };
+
 	@computed get tabFrame() { return tabFramesModel.tabFrames.get(this.props.title); };
 
-	get transform() { return { transform: [{ translateY: this.state.pan.y }] }  };
+	@computed get animationInProgress() { return tabFramesModel.animationInProgress; };
+
+	@computed get transform() { return { transform: [{ translateY: this.tabFrame.pan.y }] }  };
 
 
 	render() {
@@ -115,13 +128,15 @@ class TimeFrame extends React.Component {
 			<View style={styles.mainContainer}>
 				<View style={[ styles.draggableContainer, styles[this.props.title].tab ]}>
 					<Animated.View
-						{ ...this.panResponder.panHandlers }
 						style={[{
 							width: Window.width,
 							height: Window.height,
 							left: 0,
 						}, styles[this.props.title].content, this.transform ]}>
-						<Text style={ styles.text }>{ this.props.title } { +this.tabFrame.isActive }</Text>
+						<Text { ...this.panResponder.panHandlers } style={[ styles.text, { backgroundColor: 'black', height: 30 } ]}>{ this.props.title } { +this.tabFrame.isActive }</Text>
+						<View>
+							<Text>{ this.animationInProgress ? 'ANIMATION IN PROGRESS' : '' }</Text>
+						</View>
 					</Animated.View>
 				</View>
 			</View>

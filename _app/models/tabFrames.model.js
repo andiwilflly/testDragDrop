@@ -9,16 +9,26 @@ import {action, observable, runInAction, extendObservable, autorun, computed, is
 
 class TabFrames {
 
+	@observable animationInProgress = false;
+
 	tabFrames = observable.map();
 
 
-	createTabFrame = ({ index=0, title='', isActive=false })=> {
+	setAnimationInProgress(animationInProgress = false) {
+		runInAction(`TAB-FRAMES-ANIMATION-IN-PROGRESS ${animationInProgress}`, ()=> {
+			this.animationInProgress = animationInProgress;
+		});
+	}
+
+
+	createTabFrame = ({ index=0, title='', isActive=false, pan })=> {
 		if(!title) return runInAction(`TAB-FRAMES-CREATE-ERROR`, ()=>{});
 		runInAction(`TAB-FRAMES-CREATE-SUCCESS [${title}]`, ()=> {
 			this.tabFrames.set(title, {
 				index,
 				title,
-				isActive
+				isActive,
+				pan
 			});
 		});
 	};
