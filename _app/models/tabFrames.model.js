@@ -26,13 +26,14 @@ class TabFrames {
 	}
 
 
-	createTabFrame = ({ index=0, title='', isActive=false, pan })=> {
+	createTabFrame = ({ index=0, title='', isActive=false, isFoolScreen=false, pan })=> {
 		if(!title) return runInAction(`TAB-FRAMES-CREATE-ERROR`, ()=>{});
 		runInAction(`TAB-FRAMES-CREATE-SUCCESS [${title}]`, ()=> {
 			this.tabFrames.set(title, {
 				index,
 				title,
 				isActive,
+				isFoolScreen,
 				pan
 			});
 		});
@@ -45,7 +46,13 @@ class TabFrames {
 
 		runInAction(`TAB-FRAMES-SET-SUCCESS ${title}`, ()=> {
 			_.forEach(this.tabFrames.values(), (_tabFrame)=> {
-				this.tabFrames.set(_tabFrame.title, { ..._tabFrame, ...props, isActive: (title === _tabFrame.title ? props.isActive : false) });
+				let newTabFrame = { ..._tabFrame, ...props };
+				if(props.isActive) newTabFrame.isActive = (title === _tabFrame.title) ? props.isActive : false;
+				if(props.isFoolScreen) newTabFrame.isFoolScreen = (title === _tabFrame.title) ? props.isFoolScreen : false;
+
+				if(!newTabFrame.isActive && newTabFrame.isFoolScreen) newTabFrame.isFoolScreen = false;
+
+				this.tabFrames.set(_tabFrame.title, newTabFrame);
 			});
 		});
 	};

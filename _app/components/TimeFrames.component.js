@@ -10,6 +10,7 @@ import {action, reaction, observable, observe, computed, autorun, asStructure,ru
 import { observer } from 'mobx-react/native';
 // Models
 import tabFramesModel from 'tabFrames.model';
+import tasksModel from 'tasks.model';
 // Components
 import TimeFrame from "TimeFrame.component";
 
@@ -23,11 +24,13 @@ class TimeFrames extends React.Component {
 	constructor() {
 		super();
 
+		tasksModel.getTasks();
 		_.forEach(this.tabFramesList, (title, index)=> {
 			tabFramesModel.createTabFrame({
 				index: index,
 				title: title,
 				isActive: false,
+				isFoolScreen: false,
 				pan: new Animated.ValueXY()
 			});
 

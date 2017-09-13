@@ -57,11 +57,19 @@ class TimeFrame extends React.Component {
 						{ toValue: 0, duration: this.animationDuration }
 					).start();
 				}
-				// Case when we drag to the bottom all [tabFrames] that placed under the [activeTabFrame]
-				if(this.activeTabFrame && this.activeTabFrame.index < this.tabFrame.index) {
+
+				if(this.activeTabFrame && this.foolScreenTabFrame && this.activeTabFrame.index < this.tabFrame.index) {
 					Animated.timing(
 						this.tabFrame.pan.y,
 						{ toValue: Window.height, duration: this.animationDuration }
+					).start();
+				}
+				
+				// Case when we drag to the bottom all [tabFrames] that placed under the [activeTabFrame]
+				if(this.activeTabFrame && ! this.foolScreenTabFrame && this.activeTabFrame.index < this.tabFrame.index) {
+					Animated.timing(
+						this.tabFrame.pan.y,
+						{ toValue: 200, duration: this.animationDuration }
 					).start();
 				}
 			},
@@ -75,6 +83,8 @@ class TimeFrame extends React.Component {
 	}
 
 	
+	@computed get foolScreenTabFrame() { return _.find(tabFramesModel.tabFrames.values(), (tabFrame)=> tabFrame.isFoolScreen); };
+
 	@computed get activeTabFrame() { return _.find(tabFramesModel.tabFrames.values(), (tabFrame)=> tabFrame.isActive); };
 
 	@computed get tabFrame() { return tabFramesModel.tabFrames.get(this.props.title); };
@@ -96,21 +106,38 @@ class TimeFrame extends React.Component {
 		this.tabFrame.pan.setOffset({ x: 0, y: this.tabFrame.pan.y._value });
 		this.tabFrame.pan.setValue({ x: 0, y: 0 });
 
-		tabFramesModel.setTabFrame(this.props.title, { isActive: !this.tabFrame.isActive });
+		if(this.tabFrame.isActive) {
+			tabFramesModel.setTabFrame(this.props.title, { isFoolScreen: true });
+		} else {
+			tabFramesModel.setTabFrame(this.props.title, { isActive: !this.tabFrame.isActive });
+		}
+
 		tabFramesModel.setAnimationInProgress(true);
 	};
 
 
 	onDrag = (e, gesture)=> {
-		if(this.tabFrame.isActive) return;
+		if(!this.tabFrame.isFoolScreen) return;
 		Animated.event([ null, { dy: this.tabFrame.pan.y }])(e, gesture);
 	};
 
 
 	onDragEnd = (e, gesture)=> {
-		if(this.tabFrame.isActive) {
+		if(this.tabFrame.isFoolScreen) {
+			const isNeedToCollapseTab = gesture.y0 < -this.topY;
 			Animated.timing( this.tabFrame.pan.y, {
-				toValue: this.topY,
+				toValue: isNeedToCollapseTab ? this.defaultY : this.topY,
+				duration: this.animationDuration
+			}).start(()=> {
+				if(isNeedToCollapseTab) tabFramesModel.setTabFrame(this.props.title, { isFoolScreen: false, isActive: false });
+				this.tabFrame.pan.flattenOffset();
+				tabFramesModel.setAnimationInProgress(false);
+			});
+		} else
+		if(this.tabFrame.isActive) {
+			const backY = (this.defaultY - gesture.y0 > -this.frameHeaderHeight) ? 0 : this.defaultY - gesture.y0;
+			Animated.timing( this.tabFrame.pan.y, {
+				toValue: Math.round(backY / this.frameHeaderHeight) * this.frameHeaderHeight,
 				duration: this.animationDuration
 			}).start(()=> {
 				tabFramesModel.setAnimationInProgress(false);
@@ -144,10 +171,9 @@ class TimeFrame extends React.Component {
 								backgroundColor: 'black',
 								height: this.frameHeaderHeight - 20
 							}
-						]}>{ this.props.title } { +this.tabFrame.isActive }</Text>
+						]}>{ this.props.title } isActive: { +this.tabFrame.isActive }, isFoolScreen: { +this.tabFrame.isFoolScreen }</Text>
 						<View>
-							<Text>[ animation { this.animationInProgress ? 'running' : 'stopped' } ]</Text>
-							{ this.tabFrame.isActive ? <Tasks /> : null }
+							{/*<Tasks />*/}
 						</View>
 					</Animated.View>
 				</View>
@@ -165,9 +191,6 @@ let styles = {
 		flex    : 1
 	},
 	text        : {
-		marginTop   : 5,
-		marginLeft  : 5,
-		marginRight : 5,
 		textAlign   : 'center',
 		color       : '#fff'
 	},
