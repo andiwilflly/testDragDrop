@@ -61,7 +61,7 @@ class TimeFrame extends React.Component {
 						this.tabFrame.pan.y,
 						{
 							toValue: -(this.tabFrame.index+1) * this.frameHeaderHeight + this.frameHeaderHeight,
-							duration: 700,
+							duration: this.animationDuration,
 						}
 					).start(()=> {
 						tabFramesModel.setAnimationInProgress(false);
@@ -74,7 +74,7 @@ class TimeFrame extends React.Component {
 						this.tabFrame.pan.y,
 						{
 							toValue: gesture.dy < bottomY ? 0 : bottomY,
-							duration: 700,
+							duration: this.animationDuration,
 						}
 					).start(()=> {
 						tabFramesModel.setAnimationInProgress(false);
@@ -88,19 +88,22 @@ class TimeFrame extends React.Component {
 
 	componentDidMount() {
 		this['@reaction tabFramesModel.animationInProgress'] = reaction(
-			()=> tabFramesModel.animationInProgress,
+			()=> this.animationInProgress,
 			()=> {
-				if(!this.activeTabFrame && !tabFramesModel.animationInProgress) {
+				if(this.animationInProgress) return;
+				// Case when we drag all [tabFrames] to their default positions
+				if(!this.activeTabFrame) {
 					this.tabFrame.pan.flattenOffset();
 					Animated.timing(
 						this.tabFrame.pan.y,
-						{ toValue: 0, duration: 700 }
+						{ toValue: 0, duration: this.animationDuration }
 					).start();
 				}
+				// Case when we drag to the bottom all [tabFrames] that placed under the [activeTabFrame]
 				if(this.activeTabFrame && this.activeTabFrame.index < this.tabFrame.index) {
 					Animated.timing(
 						this.tabFrame.pan.y,
-						{ toValue: Window.height, duration: 700 }
+						{ toValue: Window.height, duration: this.animationDuration }
 					).start();
 				}
 			},
@@ -118,7 +121,9 @@ class TimeFrame extends React.Component {
 
 	@computed get tabFrame() { return tabFramesModel.tabFrames.get(this.props.title); };
 
-	@computed get animationInProgress() { return tabFramesModel.animationInProgress; };
+	@computed get animationDuration() { return tabFramesModel.animation.duration; };
+
+	@computed get animationInProgress() { return tabFramesModel.animation.inProgress; };
 
 	@computed get transform() { return { transform: [{ translateY: this.tabFrame.pan.y }] }  };
 
@@ -133,9 +138,14 @@ class TimeFrame extends React.Component {
 							height: Window.height,
 							left: 0,
 						}, styles[this.props.title].content, this.transform ]}>
-						<Text { ...this.panResponder.panHandlers } style={[ styles.text, { backgroundColor: 'black', height: 30 } ]}>{ this.props.title } { +this.tabFrame.isActive }</Text>
+						<Text { ...this.panResponder.panHandlers } style={[
+							styles.text, {
+								backgroundColor: 'black',
+								height: this.frameHeaderHeight - 20
+							}
+						]}>{ this.props.title } { +this.tabFrame.isActive }</Text>
 						<View>
-							<Text>{ this.animationInProgress ? 'ANIMATION IN PROGRESS' : '' }</Text>
+							<Text>[ animation { this.animationInProgress ? 'running' : 'stopped' } ]</Text>
 						</View>
 					</Animated.View>
 				</View>

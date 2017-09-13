@@ -9,6 +9,11 @@ import {action, observable, runInAction, extendObservable, autorun, computed, is
 
 class TabFrames {
 
+	@observable animation = {
+		inProgress: false,
+		duration: 400
+	};
+
 	@observable animationInProgress = false;
 
 	tabFrames = observable.map();
@@ -16,7 +21,7 @@ class TabFrames {
 
 	setAnimationInProgress(animationInProgress = false) {
 		runInAction(`TAB-FRAMES-ANIMATION-IN-PROGRESS ${animationInProgress}`, ()=> {
-			this.animationInProgress = animationInProgress;
+			this.animation.inProgress = animationInProgress;
 		});
 	}
 
