@@ -8,10 +8,14 @@ import _ from "lodash";
 // MobX
 import {action, reaction, observable, observe, computed, autorun, asStructure,runInAction} from 'mobx';
 import { observer } from 'mobx-react/native';
+// Models
+import tabFramesModel from 'tabFrames.model';
 
 
 @observer
 class Task extends React.Component {
+
+	frameHeaderHeight = 50; // TODO: Fix this
 
 
 	constructor(props) {
@@ -28,7 +32,7 @@ class Task extends React.Component {
 			onMoveShouldSetResponderCapture: ()=> true,
 			onMoveShouldSetPanResponderCapture: ()=> true,
 
-			onPanResponderGrant: (e, gestureState)=> {
+			onPanResponderGrant: (e, gesture)=> {
 				// Set the initial value to the current state
 				this.state.pan.setOffset({x: this.state.pan.x._value, y: this.state.pan.y._value});
 				this.state.pan.setValue({x: 0, y: 0 });
@@ -39,11 +43,14 @@ class Task extends React.Component {
 			},
 
 			// When we drag/pan the object, set the delate to the states pan position
-			onPanResponderMove: Animated.event([
-				null, {dx: this.state.pan.x, dy: this.state.pan.y},
-			]),
+			onPanResponderMove: (e, gesture)=> {
+				const isTopLimit = gesture.moveY-e.nativeEvent.locationY < this.topDragLimit;
+				Animated.event([ null,
+					{ dx: this.state.pan.x, dy: isTopLimit ? this.topDragLimit : this.state.pan.y },
+				])(e, gesture)
+			},
 
-			onPanResponderRelease: (e, {vx, vy})=> {
+			onPanResponderRelease: (e, gesture)=> {
 				// Flatten the offset to avoid erratic behavior
 				this.state.pan.flattenOffset();
 				Animated.spring(
@@ -52,11 +59,15 @@ class Task extends React.Component {
 				).start();
 			}
 		});
-
-		this.state.pan.setOffset({x: 67, y:  0 });
-		this.state.pan.setValue({x: 0, y: 0 });
-		this.state.pan.flattenOffset();
 	}
+
+	
+	@computed get tabFrame() { return tabFramesModel.tabFrames.get(this.props.title); };
+
+	@computed get defaultY() { return (this.tabFrame.index+1) * this.frameHeaderHeight - this.frameHeaderHeight; };
+
+	@computed get topDragLimit() { return (this.tabFrame.index+1) * this.frameHeaderHeight; };
+
 
 
 	render() {

@@ -170,7 +170,7 @@ class TimeFrame extends React.Component {
 							}
 						]}>{ this.props.title } isActive: { +this.tabFrame.isActive }, isFoolScreen: { +this.tabFrame.isFoolScreen }</Text>
 						<View>
-							{/*<Tasks />*/}
+							<Tasks title={ this.props.title } />
 						</View>
 					</Animated.View>
 				</View>

@@ -25,7 +25,7 @@ class Tasks extends React.Component {
 		return (
 			<View>
 				{ _.map(this.tasks.value.values(), (task, index)=> {
-					return <Task task={ task } key={index} />;
+					return <Task task={ task } key={index} title={ this.props.title } />;
 				}) }
 			</View>
 		);
