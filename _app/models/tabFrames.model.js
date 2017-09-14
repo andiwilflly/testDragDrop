@@ -11,7 +11,8 @@ class TabFrames {
 
 	@observable animation = {
 		inProgress: false,
-		duration: 400
+		duration: 400,
+		activeTabHeight: 200
 	};
 
 	@observable animationInProgress = false;

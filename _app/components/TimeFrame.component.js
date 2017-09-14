@@ -49,6 +49,7 @@ class TimeFrame extends React.Component {
 			()=> this.animationInProgress,
 			()=> {
 				if(this.animationInProgress) return;
+				
 				// Case when we drag all [tabFrames] to their default positions
 				if(!this.activeTabFrame) {
 					this.tabFrame.pan.flattenOffset();
@@ -58,18 +59,28 @@ class TimeFrame extends React.Component {
 					).start();
 				}
 
+				// Move down all [timeFrames] that [under] the [isActive] timeFrame to bottom [activeTabHeight]
+				if(this.activeTabFrame && ! this.foolScreenTabFrame && this.activeTabFrame.index < this.tabFrame.index) {
+					Animated.timing(
+						this.tabFrame.pan.y,
+						{ toValue: this.activeTabHeight, duration: this.animationDuration }
+					).start();
+				}
+
+				// Move down all [timeFrames] that [above] the [isActive] timeFrame to their [default] positions
+				if(this.activeTabFrame && ! this.foolScreenTabFrame && this.activeTabFrame.index >= this.tabFrame.index) {
+					this.tabFrame.pan.flattenOffset();
+					Animated.timing(
+						this.tabFrame.pan.y,
+						{ toValue: 0, duration: this.animationDuration }
+					).start();
+				}
+
+				// Case when we drag to the bottom all [tabFrames] that placed under the [activeTabFrame+foolScreenTabFrame]
 				if(this.activeTabFrame && this.foolScreenTabFrame && this.activeTabFrame.index < this.tabFrame.index) {
 					Animated.timing(
 						this.tabFrame.pan.y,
 						{ toValue: Window.height, duration: this.animationDuration }
-					).start();
-				}
-				
-				// Case when we drag to the bottom all [tabFrames] that placed under the [activeTabFrame]
-				if(this.activeTabFrame && ! this.foolScreenTabFrame && this.activeTabFrame.index < this.tabFrame.index) {
-					Animated.timing(
-						this.tabFrame.pan.y,
-						{ toValue: 200, duration: this.animationDuration }
 					).start();
 				}
 			},
@@ -90,6 +101,8 @@ class TimeFrame extends React.Component {
 	@computed get tabFrame() { return tabFramesModel.tabFrames.get(this.props.title); };
 
 	@computed get animationDuration() { return tabFramesModel.animation.duration; };
+	
+	@computed get activeTabHeight() { return tabFramesModel.animation.activeTabHeight; };
 
 	@computed get animationInProgress() { return tabFramesModel.animation.inProgress; };
 
@@ -135,23 +148,7 @@ class TimeFrame extends React.Component {
 			});
 		} else
 		if(this.tabFrame.isActive) {
-			const backY = (this.defaultY - gesture.y0 > -this.frameHeaderHeight) ? 0 : this.defaultY - gesture.y0;
-			Animated.timing( this.tabFrame.pan.y, {
-				toValue: Math.round(backY / this.frameHeaderHeight) * this.frameHeaderHeight,
-				duration: this.animationDuration
-			}).start(()=> {
-				tabFramesModel.setAnimationInProgress(false);
-				this.tabFrame.pan.flattenOffset();
-			});
-		} else {
-			tabFramesModel.setTabFrame(this.props.title, { isActive: gesture.dy < this.defaultY });
-			Animated.timing(this.tabFrame.pan.y, {
-				toValue: gesture.dy < this.defaultY ? 0 : this.defaultY,
-				duration: this.animationDuration
-			}).start(()=> {
-				tabFramesModel.setAnimationInProgress(false);
-				this.tabFrame.pan.flattenOffset();
-			});
+			tabFramesModel.setAnimationInProgress(false);
 		}
 	};
 
