@@ -19,6 +19,8 @@ import { observer } from 'mobx-react/native';
 import tabFramesModel from 'tabFrames.model';
 // Components
 import Tasks from "Tasks.component";
+import TaskRemoveZone from "TaskRemoveZone.component";
+import TaskFinishZone from "TaskFinishZone.component";
 
 
 // @SOURCE: https://moduscreate.com/animated_drag_and_drop_with_react_native/
@@ -172,6 +174,10 @@ class TimeFrame extends React.Component {
 						<View>
 							<Tasks title={ this.props.title } />
 						</View>
+
+						<TaskRemoveZone />
+
+						<TaskFinishZone />
 					</Animated.View>
 				</View>
 			</View>

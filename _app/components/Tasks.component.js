@@ -24,7 +24,7 @@ class Tasks extends React.Component {
 		if(this.tasks.status === 'pending') return <Text>loading...</Text>;
 		return (
 			<View>
-				{ _.map(this.tasks.value.values(), (task, index)=> {
+				{ _.map(this.tasks.value[this.props.title].values(), (task, index)=> {
 					return <Task task={ task } key={index} title={ this.props.title } />;
 				}) }
 			</View>
