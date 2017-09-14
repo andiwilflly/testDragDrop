@@ -3,7 +3,7 @@
  */
 import React from 'react';
 // Native Components
-import { View, Text, Animated, StyleSheet, PanResponder } from 'react-native';
+import { View, Dimensions, Text, Animated, StyleSheet, PanResponder } from 'react-native';
 import _ from "lodash";
 // MobX
 import {action, reaction, observable, observe, computed, autorun, asStructure,runInAction} from 'mobx';
@@ -44,15 +44,24 @@ class Task extends React.Component {
 
 			// When we drag/pan the object, set the delate to the states pan position
 			onPanResponderMove: (e, gesture)=> {
-				const isTopLimit = gesture.moveY-e.nativeEvent.locationY < this.topDragLimit;
-				Animated.event([ null,
-					{ dx: this.state.pan.x, dy: isTopLimit ? this.topDragLimit : this.state.pan.y },
-				])(e, gesture)
+				if(this.tabFrame.isFoolScreen)
+					Animated.event([ null,
+						{ dx: this.state.pan.x, dy: this.state.pan.y },
+					])(e, gesture)
 			},
 
 			onPanResponderRelease: (e, gesture)=> {
-				// Flatten the offset to avoid erratic behavior
+				const isTopLimit = gesture.moveY-e.nativeEvent.locationY < this.frameHeaderHeight;
+				const isBottomLimit = gesture.moveY - (e.nativeEvent.locationY - this.props.task.height) > Window.height;
+				const isRightLimit = gesture.moveX - (e.nativeEvent.locationX - this.props.task.width) > Window.width;
+				const isLeftLimit = gesture.moveX - e.nativeEvent.locationX < 0;
 				this.state.pan.flattenOffset();
+				if(isTopLimit || isBottomLimit || isRightLimit || isLeftLimit) {
+					Animated.spring(
+						this.state.pan,         // Auto-multiplexed
+						{ toValue: { x: 0, y: 0 }} // Back to zero
+					).start(()=> {});
+				}
 				Animated.spring(
 					this.state.scale,
 					{ toValue: 1, friction: 3 }
@@ -69,7 +78,6 @@ class Task extends React.Component {
 	@computed get topDragLimit() { return (this.tabFrame.index+1) * this.frameHeaderHeight; };
 
 
-
 	render() {
 		// Destructure the value of pan from the state
 		let { pan, scale } = this.state;
@@ -80,15 +88,17 @@ class Task extends React.Component {
 		let rotate = '0deg';
 
 		// Calculate the transform property and set it as a value for our style which we add below to the Animated.View component
-		let transform = {transform: [{translateX}, {translateY}, {rotate}, {scale}]};
+		let transform = {transform: [{translateX}, {translateY}, {scale}, {rotate}]};
 
 		return (
 			<View>
 				<Animated.View style={ [{
-					width: 100,
-					height: 100,
+					width: this.props.task.width,
+					height: this.props.task.height,
 					position: 'absolute',
 					backgroundColor: 'orange',
+					borderColor: 'white',
+					borderWidth: 1,
 					top: this.props.task.y,
 					left: this.props.task.x
 				}, transform] } { ...this._panResponder.panHandlers }>
@@ -100,5 +110,8 @@ class Task extends React.Component {
 		);
 	}
 }
+
+
+let Window = Dimensions.get('window');
 
 export default Task;
