@@ -29,7 +29,7 @@ class TimeFrames extends React.Component {
 			tabFramesModel.createTabFrame({
 				index: index,
 				title: title,
-				isActive: false,
+				isActive: title === 'Day',
 				isFoolScreen: false,
 				pan: new Animated.ValueXY()
 			});
