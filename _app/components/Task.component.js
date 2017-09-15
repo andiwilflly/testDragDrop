@@ -30,16 +30,15 @@ class Task extends React.Component {
 			onMoveShouldSetPanResponderCapture: ()=> true,
 
 			onPanResponderGrant: (e, gesture)=> {
+				Animated.spring(this.task.scale, { toValue: 1.1, friction: 3 }).start();
+				if(!this.tabFrame.isFoolScreen) return;
+
 				// Set the initial value to the current task
 				this.task.pan.setOffset({x: this.task.pan.x._value, y: this.task.pan.y._value});
 				this.task.pan.setValue({x: 0, y: 0 });
-				Animated.spring(
-					this.task.scale,
-					{ toValue: 1.1, friction: 3 }
-				).start();
+
 			},
 
-			// When we drag/pan the object, set the delate to the tasks pan position
 			onPanResponderMove: (e, gesture)=> {
 				if(!this.tabFrame.isFoolScreen) return;
 				Animated.event([ null,
@@ -62,10 +61,9 @@ class Task extends React.Component {
 						{ toValue: { x: this.task.x, y: this.task.y }} // Back to zero
 					).start(()=> {});
 				} else {
-					// We can set [task] x y positions on component will un mount event ?
 					tasksModel.changeTask(this.props.title, this.props.task.title, {
-						x: this.task.pan.x._value,
-						y: this.task.pan.y._value,
+						x: Math.round(this.task.pan.x._value),
+						y: Math.round(this.task.pan.y._value),
 					});
 					this.task.pan.flattenOffset();
 				}
@@ -75,9 +73,10 @@ class Task extends React.Component {
 
 
 	componentDidMount() {
+		// Set [task] to [start] position
 		Animated.spring(
-			this.task.pan,         // Auto-multiplexed
-			{ toValue: { x: this.task.x, y: this.task.y } } // Back to zero
+			this.task.pan,
+			{ toValue: { x: this.task.x, y: this.task.y }, duration: 1000 }
 		).start(()=> this.task.pan.flattenOffset());
 	}
 
@@ -86,19 +85,10 @@ class Task extends React.Component {
 
 	@computed get tabFrame() { return tabFramesModel.tabFrames.get(this.props.title); };
 
+	@computed get transform() { return { transform: [ { translateX: this.task.pan.x }, { translateY: this.task.pan.y }, { scale: this.task.scale } ]}; };
+
 
 	render() {
-		// Destructure the value of pan from the task
-		let { pan, scale } = this.task;
-
-		// Calculate the x and y transform from the pan value
-		let [translateX, translateY] = [pan.x, pan.y];
-
-		let rotate = '0deg';
-
-		// Calculate the transform property and set it as a value for our style which we add below to the Animated.View component
-		let transform = {transform: [{translateX}, {translateY}, {scale}]};
-
 		return (
 			<View>
 				<Animated.View style={ [{
@@ -110,7 +100,7 @@ class Task extends React.Component {
 					borderWidth: 1,
 					top: 0,
 					left: 0
-				}, transform] } { ...this._panResponder.panHandlers }>
+				}, this.transform] } { ...this._panResponder.panHandlers }>
 					<View>
 						<Text>{ this.task.title }</Text>
 						<Text>x: { this.task.x }</Text>
