@@ -41,13 +41,16 @@ class Task extends React.Component {
 
 			// When we drag/pan the object, set the delate to the tasks pan position
 			onPanResponderMove: (e, gesture)=> {
-				if(this.tabFrame.isFoolScreen)
-					Animated.event([ null,
-						{ dx: this.task.pan.x, dy: this.task.pan.y },
-					])(e, gesture)
+				if(!this.tabFrame.isFoolScreen) return;
+				Animated.event([ null,
+					{ dx: this.task.pan.x, dy: this.task.pan.y },
+				])(e, gesture)
 			},
 
 			onPanResponderRelease: (e, gesture)=> {
+				Animated.spring(this.task.scale, { toValue: 1, friction: 3 }).start();
+				if(!this.tabFrame.isFoolScreen) return;
+
 				const isTopLimit = gesture.moveY-e.nativeEvent.locationY < this.frameHeaderHeight;
 				const isBottomLimit = gesture.moveY - (e.nativeEvent.locationY - this.task.height) > Window.height;
 				const isRightLimit = gesture.moveX - (e.nativeEvent.locationX - this.task.width) > Window.width;
@@ -56,17 +59,26 @@ class Task extends React.Component {
 				if(isTopLimit || isBottomLimit || isRightLimit || isLeftLimit) {
 					Animated.spring(
 						this.task.pan,         // Auto-multiplexed
-						{ toValue: { x: 0, y: 0 }} // Back to zero
+						{ toValue: { x: this.task.x, y: this.task.y }} // Back to zero
 					).start(()=> {});
 				} else {
 					// We can set [task] x y positions on component will un mount event ?
+					tasksModel.changeTask(this.props.title, this.props.task.title, {
+						x: this.task.pan.x._value,
+						y: this.task.pan.y._value,
+					});
+					this.task.pan.flattenOffset();
 				}
-				Animated.spring(
-					this.task.scale,
-					{ toValue: 1, friction: 3 }
-				).start();
 			}
 		});
+	}
+
+
+	componentDidMount() {
+		Animated.spring(
+			this.task.pan,         // Auto-multiplexed
+			{ toValue: { x: this.task.x, y: this.task.y } } // Back to zero
+		).start(()=> this.task.pan.flattenOffset());
 	}
 
 	
@@ -85,7 +97,7 @@ class Task extends React.Component {
 		let rotate = '0deg';
 
 		// Calculate the transform property and set it as a value for our style which we add below to the Animated.View component
-		let transform = {transform: [{translateX}, {translateY}]};
+		let transform = {transform: [{translateX}, {translateY}, {scale}]};
 
 		return (
 			<View>
@@ -96,11 +108,13 @@ class Task extends React.Component {
 					backgroundColor: 'orange',
 					borderColor: 'white',
 					borderWidth: 1,
-					top: this.task.y,
-					left: this.task.x
+					top: 0,
+					left: 0
 				}, transform] } { ...this._panResponder.panHandlers }>
 					<View>
 						<Text>{ this.task.title }</Text>
+						<Text>x: { this.task.x }</Text>
+						<Text>y: { this.task.y }</Text>
 					</View>
 				</Animated.View>
 			</View>
