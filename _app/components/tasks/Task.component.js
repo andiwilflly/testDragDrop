@@ -20,11 +20,6 @@ class Task extends React.Component {
 
 
 	componentWillMount() {
-		tasksModel.changeTask(this.props.title, this.props.task.title, {
-			pan: new Animated.ValueXY(),
-			scale: new Animated.Value(1)
-		});
-
 		this._panResponder = PanResponder.create({
 			onMoveShouldSetResponderCapture: ()=> true,
 			onMoveShouldSetPanResponderCapture: ()=> true,
@@ -38,7 +33,7 @@ class Task extends React.Component {
 	componentDidMount() {
 		Animated.timing( this.task.pan, {
 			toValue: { x: this.task.x, y: this.task.y },
-			duration: 1000
+			duration: 700
 		}).start(()=> this.task.pan.flattenOffset());
 	}
 
@@ -46,6 +41,8 @@ class Task extends React.Component {
 	@computed get task() { return tasksModel.tasks.value[this.props.title].get(this.props.task.title); };
 
 	@computed get tabFrame() { return tabFramesModel.tabFrames.get(this.props.title); };
+
+	@computed get topY() { return (this.tabFrame.index+1) * this.frameHeaderHeight + this.frameHeaderHeight; };
 
 	@computed get transform() { return { transform: [ { translateX: this.task.pan.x }, { translateY: this.task.pan.y }, { scale: this.task.scale } ]}; };
 
@@ -82,6 +79,21 @@ class Task extends React.Component {
 		const isLeftLimit = newX < 0;
 		const isLimit = isTopLimit || isBottomLimit || isRightLimit || isLeftLimit;
 
+		const dropToFrameIndex = Math.floor((this.topY - Math.abs(newY)) / this.frameHeaderHeight);
+		const isDropTaskToTopFrame = isTopLimit && dropToFrameIndex >=0 && dropToFrameIndex < this.tabFrame.index && !this.tabFrame.isFoolScreen;
+		const isDropTaskToBottomFrame = newY > tabFramesModel.animation.activeTabHeight - tabFramesModel.animation.frameHeaderHeight;
+
+		if(isDropTaskToTopFrame) {
+			const dropToFrameIndex = Math.floor((this.topY - Math.abs(newY)) / this.frameHeaderHeight);
+			const dropToTabFrame = tabFramesModel.findTabFrame({ index: dropToFrameIndex });
+			this.moveTaskToOtherFrame(dropToTabFrame);
+		} else
+		if(isDropTaskToBottomFrame) {
+			let dropToFrameIndex = this.tabFrame.index + Math.round((newY - (tabFramesModel.animation.activeTabHeight - tabFramesModel.animation.frameHeaderHeight)) / this.frameHeaderHeight);
+			if(dropToFrameIndex >= tabFramesModel.tabFrames.size) dropToFrameIndex = tabFramesModel.tabFrames.size - 1;
+			const dropToTabFrame = tabFramesModel.findTabFrame({ index: dropToFrameIndex });
+			this.moveTaskToOtherFrame(dropToTabFrame);
+		} else
 		if(isLimit) {
 			// Move back to [previous] position of [task]
 			Animated.spring(this.task.pan, { toValue: { x: this.task.x, y: this.task.y }} ).start(()=> {});
@@ -92,6 +104,18 @@ class Task extends React.Component {
 	};
 
 
+	moveTaskToOtherFrame(dropToTabFrame) {
+		// TODO: Fix for last frame
+		tabFramesModel.setTabFrame(dropToTabFrame.title, { isActive: true });
+		tabFramesModel.setAnimationInProgress(true);
+
+		// Here we crete new [task] for [dropToTabFrame] and remove this [task] from current [tabFrame]
+		tasksModel.createTask(dropToTabFrame.title, { ...this.task });
+		tasksModel.removeTask(this.props.title, this.props.task.title);
+		tabFramesModel.setAnimationInProgress(false);
+	}
+
+
 	render() {
 		if(!this.tabFrame.isActive) return (
 			<View>
@@ -100,7 +124,6 @@ class Task extends React.Component {
 					height: this.task.height,
 					position: 'absolute',
 					backgroundColor: this.backgroundColor,
-					color: 'white',
 					borderColor: 'white',
 					borderWidth: 1,
 					top: this.task.y,
@@ -120,7 +143,6 @@ class Task extends React.Component {
 					height: this.task.height,
 					position: 'absolute',
 					backgroundColor: this.backgroundColor,
-					color: 'white',
 					borderColor: 'white',
 					borderWidth: 1,
 					top: 0,

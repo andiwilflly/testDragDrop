@@ -10,6 +10,7 @@ import {action, observable, runInAction, extendObservable, autorun, computed, is
 class TabFrames {
 
 	@observable animation = {
+		frameHeaderHeight: 50,
 		inProgress: false,
 		duration: 400,
 		activeTabHeight: 200
@@ -18,6 +19,14 @@ class TabFrames {
 	@observable animationInProgress = false;
 
 	tabFrames = observable.map();
+
+
+	findTabFrame(params = {}) {
+		const tabFrame = _.find(this.tabFrames.values(), params);
+		if(!tabFrame) return runInAction('TAB-FRAMES-FIND-TAB-FRAME-ERROR', ()=> {});
+		runInAction(`TAB-FRAMES-FIND-TAB-FRAME-SUCCESS ${tabFrame.title}`, ()=> {});
+		return tabFrame;
+	};
 
 
 	setAnimationInProgress(animationInProgress = false) {

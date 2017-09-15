@@ -29,10 +29,6 @@ import TaskFinishZone from "TaskFinishZone.component";
 @observer
 class TimeFrame extends React.Component {
 
-
-	frameHeaderHeight = 50;
-
-
 	constructor(props) {
 		super(props);
 
@@ -51,7 +47,7 @@ class TimeFrame extends React.Component {
 			()=> this.animationInProgress,
 			()=> {
 				if(this.animationInProgress) return;
-				
+
 				// Case when we drag all [tabFrames] to their default positions
 				if(!this.activeTabFrame) {
 					this.tabFrame.pan.flattenOffset();
@@ -105,6 +101,8 @@ class TimeFrame extends React.Component {
 	@computed get animationDuration() { return tabFramesModel.animation.duration; };
 	
 	@computed get activeTabHeight() { return tabFramesModel.animation.activeTabHeight; };
+
+	@computed get frameHeaderHeight() { return tabFramesModel.animation.frameHeaderHeight; };
 
 	@computed get animationInProgress() { return tabFramesModel.animation.inProgress; };
 
@@ -168,7 +166,9 @@ class TimeFrame extends React.Component {
 						<Text { ...this.panResponder.panHandlers } style={[
 							styles.text, {
 								backgroundColor: 'black',
-								height: this.frameHeaderHeight - 20
+								borderColor: 'white',
+								borderWidth: 1,
+								height: this.frameHeaderHeight
 							}
 						]}>{ this.props.title } isActive: { +this.tabFrame.isActive }, isFoolScreen: { +this.tabFrame.isFoolScreen }</Text>
 						<View>
