@@ -3,7 +3,7 @@
  */
 import React from 'react';
 // Native Components
-import { View, Dimensions, Text, Animated, StyleSheet, PanResponder } from 'react-native';
+import { View, Dimensions, Text, Animated, TouchableOpacity, StyleSheet, PanResponder } from 'react-native';
 import _ from "lodash";
 // MobX
 import {action, reaction, observable, observe, computed, autorun, asStructure,runInAction} from 'mobx';
@@ -37,8 +37,12 @@ class Task extends React.Component {
 		}).start(()=> this.task.pan.flattenOffset());
 	}
 
-	
+
 	@computed get task() { return tasksModel.tasks.value[this.props.title].get(this.props.task.title); };
+
+	@computed get isDraggableTask() { return this.tabFrame.isActive && this.isSelectedTask; };
+
+	@computed get isSelectedTask() { return tasksModel.selectedTask && tasksModel.selectedTask.title === this.task.title; };
 
 	@computed get tabFrame() { return tabFramesModel.tabFrames.get(this.props.title); };
 
@@ -51,7 +55,6 @@ class Task extends React.Component {
 
 	onDragStart = (e, gesture)=> {
 		Animated.spring(this.task.scale, { toValue: 1.1, friction: 3 }).start();
-		if(!this.tabFrame.isActive) return;
 
 		// Set the initial value to the current task
 		this.task.pan.setOffset({x: this.task.pan.x._value, y: this.task.pan.y._value});
@@ -60,14 +63,15 @@ class Task extends React.Component {
 
 
 	onDrag = (e, gesture)=> {
-		if(!this.tabFrame.isActive) return;
+		if(!this.isDraggableTask) return;
 		Animated.event([ null, { dx: this.task.pan.x, dy: this.task.pan.y } ])(e, gesture);
 	};
 
 
 	onDragEnd = (e, gesture)=> {
 		Animated.spring(this.task.scale, { toValue: 1, friction: 3 }).start();
-		if(!this.tabFrame.isActive) return;
+
+		if(!this.isDraggableTask) return;
 		this.task.pan.flattenOffset();
 
 		const newX = Math.round(this.task.pan.x._value);
@@ -117,8 +121,8 @@ class Task extends React.Component {
 
 
 	render() {
-		if(!this.tabFrame.isActive) return (
-			<View>
+		if(!this.tabFrame.isActive || !this.isSelectedTask) return (
+			<TouchableOpacity onPress={ ()=> this.isSelectedTask ? false : tasksModel.selectTask(this.task) }>
 				<View style={ [{
 					width: this.task.width,
 					height: this.task.height,
@@ -133,7 +137,7 @@ class Task extends React.Component {
 						<Text>(fake)</Text>
 					</View>
 				</View>
-			</View>
+			</TouchableOpacity>
 		);
 
 		return (
@@ -143,7 +147,7 @@ class Task extends React.Component {
 					height: this.task.height,
 					position: 'absolute',
 					backgroundColor: this.backgroundColor,
-					borderColor: 'white',
+					borderColor: 'black',
 					borderWidth: 1,
 					top: 0,
 					left: 0

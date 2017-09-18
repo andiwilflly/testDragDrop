@@ -19,15 +19,18 @@ class Tasks {
 	};
 
 
+	@observable selectedTask = null;
+
+
 	getTasks() {
 		runInAction(`TASKS-GET-PENDING`, ()=> {
 			_.forEach(["Life", "Year", "Month", "Week", "Day"], (frameTitle)=> {
 				this.tasks.value[frameTitle] = observable.map();
 				_.forEach([
-					{ title: 'test task 1' + frameTitle, status: 1, y: 123, x: 12, width: 100, height: 100 },
-					{ title: 'test task 2' + frameTitle, status: 3, y: 67, x: 125, width: 70, height: 70 },
-					{ title: 'test task 3' + frameTitle, status: 7, y: 145, x: 3, width: 130, height: 130 },
-					{ title: 'test task 4' + frameTitle, status: 9, y: 431, x: 190, width: 150, height: 50 },
+					{ title: 'test task 1' + frameTitle, status: 1, y: 123, x: 12, width: 100, height: 100, isSelected: false },
+					{ title: 'test task 2' + frameTitle, status: 3, y: 67, x: 125, width: 70, height: 70, isSelected: false },
+					{ title: 'test task 3' + frameTitle, status: 7, y: 145, x: 3, width: 130, height: 130, isSelected: false },
+					{ title: 'test task 4' + frameTitle, status: 9, y: 431, x: 190, width: 150, height: 50, isSelected: false },
 				], (task)=> {
 					this.createTask(frameTitle, task);
 					this.tasks.status = 'fulfilled';
@@ -68,6 +71,13 @@ class Tasks {
 	removeTask(frameTitle, title) {
 		const isRemoved = this.tasks.value[frameTitle].delete(title);
 		runInAction(`TASKS-REMOVE-TASK ${ isRemoved ? '-SUCCESS' : '-ERROR' }`, ()=> {});
+	}
+
+
+	selectTask(task) {
+		runInAction(`TASKS-SELECT-TASK ${task.title}`, ()=> {
+			this.selectedTask = task;
+		});
 	}
 }
 
